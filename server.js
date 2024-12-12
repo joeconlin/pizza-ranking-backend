@@ -403,7 +403,8 @@ app.get('/get-leaderboard', async (req, res) => {
 
 
 // Start the Express Server
-const PORT = 5001;
+// server.js
+const PORT = process.env.PORT || 5001;  // Use environment variable, fallback to 5001
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
