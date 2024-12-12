@@ -14,6 +14,7 @@ app.use(bodyParser.json());
 app.use(cors({
   origin: [
     'https://pizza-ranking-frontend.vercel.app',  // Your production Vercel domain
+    'https://pizza.chumb.us',
     'http://localhost:3000'
   ],
   credentials: false,
