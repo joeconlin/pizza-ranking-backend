@@ -13,8 +13,8 @@ app.use(bodyParser.json());
 
 app.use(cors({
   origin: [
-    'https://pizza-ranking-frontend-l6vjt2wnr-joeconlins-projects.vercel.app',  // Your actual Vercel domain
-    'http://localhost:3000'  // Local development
+    'https://pizza-ranking-frontend.vercel.app',  // Your production Vercel domain
+    'http://localhost:3000'
   ],
   credentials: false,
   methods: ['GET', 'POST']
