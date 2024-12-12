@@ -10,7 +10,17 @@ const credentials = process.env.NODE_ENV === 'production'
 
 const app = express();
 app.use(bodyParser.json());
-app.use(cors());
+
+const cors = require('cors');
+
+// Update the CORS configuration to allow your Vercel domain
+app.use(cors({
+  origin: [
+    'https://pizza-ranking-frontend-erkzy4yf7-joeconlins-projects.vercel.app',  // Your Vercel domain
+    'http://localhost:3000'  // Local development
+  ],
+  credentials: false  // Change this to false for now
+}));
 
 // Google Sheets API Setup
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
