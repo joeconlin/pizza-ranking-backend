@@ -301,7 +301,7 @@ app.post('/update-ranked', async (req, res) => {
   }
 });
 
-aapp.get('/get-leaderboard', async (req, res) => {
+app.get('/get-leaderboard', async (req, res) => {
   const { userCode } = req.query;
 
   try {
