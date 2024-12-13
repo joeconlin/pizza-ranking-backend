@@ -301,7 +301,9 @@ app.post('/update-ranked', async (req, res) => {
   }
 });
 
-app.get('/get-leaderboard', async (req, res) => {
+aapp.get('/get-leaderboard', async (req, res) => {
+  const { userCode } = req.query;
+
   try {
     const ratingsData = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -312,13 +314,18 @@ app.get('/get-leaderboard', async (req, res) => {
     const ratingsDataRows = ratingsRows.slice(1); // Skip header row
 
     const spots = {};
+    const userSpots = {};
+
     ratingsDataRows.forEach((row) => {
+      const user = row[0];
       const spotName = row[1];
       const crust = parseFloat(row[3]) || 0;
       const sauce = parseFloat(row[4]) || 0;
       const cheese = parseFloat(row[5]) || 0;
       const overallFlavor = parseFloat(row[6]) || 0;
+      const totalScore = crust + sauce + cheese + overallFlavor;
 
+      // Group scores
       if (!spots[spotName]) {
         spots[spotName] = {
           totalRatings: 0,
@@ -326,33 +333,35 @@ app.get('/get-leaderboard', async (req, res) => {
           totalSauce: 0,
           totalCheese: 0,
           totalFlavor: 0,
+          groupTotalScore: 0,
         };
       }
-
       spots[spotName].totalRatings += 1;
       spots[spotName].totalCrust += crust;
       spots[spotName].totalSauce += sauce;
       spots[spotName].totalCheese += cheese;
       spots[spotName].totalFlavor += overallFlavor;
+      spots[spotName].groupTotalScore += totalScore;
+
+      // User-specific scores
+      if (user === userCode) {
+        if (!userSpots[spotName]) {
+          userSpots[spotName] = {
+            userTotalScore: 0,
+          };
+        }
+        userSpots[spotName].userTotalScore = totalScore;
+      }
     });
 
     const leaderboard = Object.entries(spots).map(([spotName, stats]) => ({
       spotName,
-      averageScore: (
-        (stats.totalCrust +
-          stats.totalSauce +
-          stats.totalCheese +
-          stats.totalFlavor) /
-        stats.totalRatings
-      ).toFixed(1),
-      averageCrust: (stats.totalCrust / stats.totalRatings).toFixed(1),
-      averageSauce: (stats.totalSauce / stats.totalRatings).toFixed(1),
-      averageCheese: (stats.totalCheese / stats.totalRatings).toFixed(1),
-      averageOverallFlavor: (stats.totalFlavor / stats.totalRatings).toFixed(1),
+      groupAvgScore: (stats.groupTotalScore / stats.totalRatings).toFixed(1),
+      userScore: userSpots[spotName] ? userSpots[spotName].userTotalScore.toFixed(1) : 'N/A',
     }));
 
-    // Sort leaderboard by average score in descending order
-    leaderboard.sort((a, b) => b.averageScore - a.averageScore);
+    // Sort leaderboard by group average score descending
+    leaderboard.sort((a, b) => parseFloat(b.groupAvgScore) - parseFloat(a.groupAvgScore));
 
     res.status(200).json(leaderboard);
   } catch (error) {
