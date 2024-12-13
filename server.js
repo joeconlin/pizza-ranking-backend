@@ -345,6 +345,9 @@ app.get('/get-leaderboard', async (req, res) => {
 
       // User-specific scores
       if (user === userCode) {
+        console.log(`Processing user scores for ${spotName}`);
+        console.log(`Crust: ${crust}, Sauce: ${sauce}, Cheese: ${cheese}, Overall: ${overallFlavor}`);
+      
         if (!userSpots[spotName]) {
           userSpots[spotName] = {
             userTotalScore: 0,
@@ -362,11 +365,11 @@ app.get('/get-leaderboard', async (req, res) => {
       spotName,
       groupAvgScore: (stats.groupTotalScore / stats.totalRatings).toFixed(1),
       userScore: userSpots[spotName] ? userSpots[spotName].userTotalScore.toFixed(1) : 'N/A',
+      userCategoryScores: userSpots[spotName] || { crust: '-', sauce: '-', cheese: '-', overallFlavor: '-' },
       averageCrust: (stats.totalCrust / stats.totalRatings).toFixed(1),
       averageSauce: (stats.totalSauce / stats.totalRatings).toFixed(1),
       averageCheese: (stats.totalCheese / stats.totalRatings).toFixed(1),
       averageOverallFlavor: (stats.totalFlavor / stats.totalRatings).toFixed(1),
-      userCategoryScores: userSpots[spotName] || { crust: '-', sauce: '-', cheese: '-', overallFlavor: '-' },
     }));
 
     leaderboard.sort((a, b) => parseFloat(b.groupAvgScore) - parseFloat(a.groupAvgScore));
