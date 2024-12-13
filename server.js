@@ -95,7 +95,7 @@ app.post('/submit-rating', async (req, res) => {
 
 
 app.get('/get-user-ratings', async (req, res) => {
-  const { clientUID } = req.query;
+  const { userCode } = req.query;
 
   try {
     const ratingsData = await sheets.spreadsheets.values.get({
@@ -106,7 +106,7 @@ app.get('/get-user-ratings', async (req, res) => {
     const ratingsRows = ratingsData.data.values || [];
     const userRatings = ratingsRows
       .slice(1) // Skip the header row
-      .filter((row) => row[0] === clientUID) // Match by clientUID
+      .filter((row) => row[0] === userCode) // Match by userCode
       .map((row) => ({
         spotName: row[1],
         crust: row[3],
@@ -226,7 +226,7 @@ app.get('/get-rating', async (req, res) => {
 
 
 app.get('/get-spots', async (req, res) => {
-  const { clientUID } = req.query;
+  const { userCode } = req.query;
 
   try {
     // Fetch pizza spots
@@ -251,7 +251,7 @@ app.get('/get-spots', async (req, res) => {
     const responsesRows = responsesData.data.values || [];
     const responses = responsesRows
       .slice(1)
-      .filter((row) => row[0] === clientUID) // Filter by clientUID
+      .filter((row) => row[0] === userCode) // Filter by userCode
       .map((row) => ({
         spotName: row[1],
         crust: row[2],
