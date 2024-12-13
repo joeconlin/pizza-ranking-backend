@@ -34,95 +34,68 @@ const SPREADSHEET_ID = '1PufqeJfGoq6K1XSsKESX122TKVUyDrORKPgInatZhyM';
 
 // Endpoint to Submit Rankings
 app.post('/submit-rating', async (req, res) => {
-  const { clientUID, spotName, user, notes, ratings } = req.body; // Extract ratings object
-  const { crust, sauce, cheese, flavor: overallFlavor } = ratings; // Destructure scores
+  const { userCode, spotName, notes, ratings } = req.body;
+  const { crust, sauce, cheese, flavor: overallFlavor } = ratings;
 
   try {
-    // Step 1: Fetch all existing data from Sheet1
     const sheetData = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Sheet1!A:I', // Ensure range covers all columns
+      range: 'Sheet1!A:I',
     });
 
     const rows = sheetData.data.values || [];
-    const dataRows = rows.slice(1); // Skip the header row
+    const dataRows = rows.slice(1);
 
-    // Step 2: Find the matching row index
     const matchIndex = dataRows.findIndex(
-      (row) => row[0] === clientUID && row[1] === spotName
+      (row) => row[0] === userCode && row[1] === spotName
     );
 
     if (matchIndex !== -1) {
-      // Update existing row
-      const rowNumber = matchIndex + 2; // Account for header row and 1-based indexing
-      const existingNotes = dataRows[matchIndex][7] || ''; // Existing notes (Column H)
-
+      // Update existing rating
+      const rowNumber = matchIndex + 2;
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: `Sheet1!A${rowNumber}:I${rowNumber}`, // Update the entire row
+        range: `Sheet1!A${rowNumber}:I${rowNumber}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [[
-            clientUID,             // Column A
-            spotName,              // Column B
-            user,                  // Column C
-            crust,                 // Column D
-            sauce,                 // Column E
-            cheese,                // Column F
-            overallFlavor,         // Column G
-            `${existingNotes}\n${notes}`, // Append new notes
-            new Date().toISOString(),    // Column I: Timestamp
+            userCode,
+            spotName,
+            userName, // This might need to be fetched or passed in
+            crust,
+            sauce,
+            cheese,
+            overallFlavor,
+            notes,
+            new Date().toISOString(),
           ]],
         },
       });
     } else {
-      // Append new row
+      // Add new rating
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
         range: 'Sheet1!A:I',
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [[
-            clientUID,             // Column A
-            spotName,              // Column B
-            user,                  // Column C
-            crust,                 // Column D
-            sauce,                 // Column E
-            cheese,                // Column F
-            overallFlavor,         // Column G
-            notes,                 // Column H
-            new Date().toISOString(), // Column I: Timestamp
+            userCode,
+            spotName,
+            userName, // This might need to be fetched or passed in
+            crust,
+            sauce,
+            cheese,
+            overallFlavor,
+            notes,
+            new Date().toISOString(),
           ]],
-        },
-      });
-    }
-
-    // Update ranked status in PizzaSpots sheet
-    const pizzaSpotsData = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: 'PizzaSpots!A:E', // Ensure range covers all columns in PizzaSpots
-    });
-
-    const pizzaSpotsRows = pizzaSpotsData.data.values || [];
-    const pizzaSpotsDataRows = pizzaSpotsRows.slice(1); // Skip the header row
-
-    const spotIndex = pizzaSpotsDataRows.findIndex((row) => row[0] === spotName);
-
-    if (spotIndex !== -1) {
-      const spotRowNumber = spotIndex + 2; // Account for header row and 1-based indexing
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `PizzaSpots!E${spotRowNumber}`, // Update the "ranked" column
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values: [['TRUE']], // Mark the spot as ranked
         },
       });
     }
 
     res.status(200).json({ message: 'Rating submitted successfully!' });
   } catch (error) {
-    console.error('Error handling rating submission:', error.message);
+    console.error('Error handling rating submission:', error);
     res.status(500).json({ error: 'Failed to submit rating.' });
   }
 });
@@ -158,21 +131,21 @@ app.get('/get-user-ratings', async (req, res) => {
 
 
 app.post('/set-name', async (req, res) => {
-  const { clientUID, userName } = req.body;
+  const { userCode, userName } = req.body;
 
   try {
-    const userMappingSheet = 'UserMapping!A:B'; // UID in Column A, Name in Column B
+    const userMappingSheet = 'UserMapping!A:B';
     const existingMappings = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: userMappingSheet,
     });
 
     const mappings = existingMappings.data.values || [];
-    const existingEntry = mappings.find(row => row[0] === clientUID);
+    const existingEntry = mappings.find(row => row[0] === userCode);
 
     if (existingEntry) {
-      // Update the existing name for the UID
-      const rowIndex = mappings.findIndex(row => row[0] === clientUID) + 1;
+      // Update existing name
+      const rowIndex = mappings.findIndex(row => row[0] === userCode) + 1;
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
         range: `UserMapping!B${rowIndex}`,
@@ -180,45 +153,41 @@ app.post('/set-name', async (req, res) => {
         requestBody: { values: [[userName]] },
       });
     } else {
-      // Add a new UID-name mapping
+      // Add new mapping
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
         range: userMappingSheet,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
-          values: [[clientUID, userName]],
+          values: [[userCode, userName]],
         },
       });
     }
 
     res.status(200).json({ message: 'Name set successfully!' });
   } catch (error) {
-    console.error('Error setting name:', error.message);
+    console.error('Error setting name:', error);
     res.status(500).json({ error: 'Failed to set name.' });
   }
 });
 
 app.post('/get-username', async (req, res) => {
   try {
-    const { clientUID } = req.body;
+    const { userCode } = req.body;
 
-    // Fetch the UID-to-Username mapping sheet
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'UserMapping!A:B',
+      range: 'UserMapping!A:B', // Column A: userCode, Column B: userName
     });
 
     const rows = response.data.values || [];
-    const dataRows = rows.slice(1); // Exclude the header row
+    const dataRows = rows.slice(1); // Exclude header row
 
-    // Find the matching UID
-    const matchingRow = dataRows.find((row) => row[0] === clientUID);
+    const matchingRow = dataRows.find((row) => row[0] === userCode);
 
     if (matchingRow) {
-      // UID exists, return the username
       res.status(200).json({ userName: matchingRow[1] });
     } else {
-      // UID does not exist, but don't create a default mapping
       res.status(200).json({ userName: null });
     }
   } catch (error) {
@@ -228,20 +197,19 @@ app.post('/get-username', async (req, res) => {
 });
 
 app.get('/get-rating', async (req, res) => {
-  const { clientUID, spotName } = req.query;
+  const { userCode, spotName } = req.query;
 
   try {
     const sheetData = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Sheet1!A:I', // Ensure range covers all columns
+      range: 'Sheet1!A:I',
     });
 
     const rows = sheetData.data.values || [];
-    const dataRows = rows.slice(1); // Skip the header row
+    const dataRows = rows.slice(1);
 
-    // Find the matching row
     const match = dataRows.find(
-      (row) => row[0] === clientUID && row[1] === spotName
+      (row) => row[0] === userCode && row[1] === spotName
     );
 
     if (match) {
@@ -258,7 +226,7 @@ app.get('/get-rating', async (req, res) => {
       res.json({ ratings: null, notes: '' });
     }
   } catch (error) {
-    console.error('Error fetching ratings:', error.message);
+    console.error('Error fetching ratings:', error);
     res.status(500).json({ error: 'Failed to fetch ratings.' });
   }
 });
@@ -400,6 +368,28 @@ app.get('/get-leaderboard', async (req, res) => {
   }
 });
 
+app.post('/verify-code', async (req, res) => {
+  try {
+    const { userCode } = req.body;
+    
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: 'UserMapping!A:B',
+    });
+
+    const rows = response.data.values || [];
+    const exists = rows.some(row => row[0] === userCode);
+
+    if (exists) {
+      res.status(200).json({ valid: true });
+    } else {
+      res.status(404).json({ valid: false });
+    }
+  } catch (error) {
+    console.error('Error verifying code:', error);
+    res.status(500).json({ error: 'Failed to verify code' });
+  }
+});
 
 
 // Start the Express Server
