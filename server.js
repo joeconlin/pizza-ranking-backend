@@ -307,7 +307,7 @@ app.get('/get-leaderboard', async (req, res) => {
   try {
     const ratingsData = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Sheet1!A:I', // Adjust the range as needed
+      range: 'Sheet1!A:I',
     });
 
     const ratingsRows = ratingsData.data.values || [];
@@ -348,6 +348,10 @@ app.get('/get-leaderboard', async (req, res) => {
         if (!userSpots[spotName]) {
           userSpots[spotName] = {
             userTotalScore: 0,
+            crust,
+            sauce,
+            cheese,
+            overallFlavor,
           };
         }
         userSpots[spotName].userTotalScore = totalScore;
@@ -358,9 +362,13 @@ app.get('/get-leaderboard', async (req, res) => {
       spotName,
       groupAvgScore: (stats.groupTotalScore / stats.totalRatings).toFixed(1),
       userScore: userSpots[spotName] ? userSpots[spotName].userTotalScore.toFixed(1) : 'N/A',
+      averageCrust: (stats.totalCrust / stats.totalRatings).toFixed(1),
+      averageSauce: (stats.totalSauce / stats.totalRatings).toFixed(1),
+      averageCheese: (stats.totalCheese / stats.totalRatings).toFixed(1),
+      averageOverallFlavor: (stats.totalFlavor / stats.totalRatings).toFixed(1),
+      userCategoryScores: userSpots[spotName] || { crust: '-', sauce: '-', cheese: '-', overallFlavor: '-' },
     }));
 
-    // Sort leaderboard by group average score descending
     leaderboard.sort((a, b) => parseFloat(b.groupAvgScore) - parseFloat(a.groupAvgScore));
 
     res.status(200).json(leaderboard);
