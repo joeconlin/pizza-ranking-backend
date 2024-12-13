@@ -205,7 +205,7 @@ app.post('/get-username', async (req, res) => {
     // Fetch the UID-to-Username mapping sheet
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'UserMapping!A:B', // Adjust the range for the UIDMapping worksheet
+      range: 'UserMapping!A:B',
     });
 
     const rows = response.data.values || [];
@@ -218,20 +218,11 @@ app.post('/get-username', async (req, res) => {
       // UID exists, return the username
       res.status(200).json({ userName: matchingRow[1] });
     } else {
-      // UID does not exist, add a default mapping
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: 'UserMapping!A:B',
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values: [[clientUID, 'Click to Edit Name']],
-        },
-      });
-
-      res.status(200).json({ userName: 'Click to Edit Name' });
+      // UID does not exist, but don't create a default mapping
+      res.status(200).json({ userName: null });
     }
   } catch (error) {
-    console.error('Error fetching username:', error.message);
+    console.error('Error fetching username:', error);
     res.status(500).json({ error: 'Failed to fetch username.' });
   }
 });
