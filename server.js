@@ -38,56 +38,49 @@ app.post('/submit-rating', async (req, res) => {
   const { crust, sauce, cheese, flavor: overallFlavor } = ratings;
 
   try {
+    // Fetch `userName` from UserMapping Sheet
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: 'UserMapping!A:B', // Column A: userCode, Column B: userName
+    });
+
+    const rows = response.data.values || [];
+    const matchingRow = rows.find(row => row[0] === userCode);
+    const userName = matchingRow ? matchingRow[1] : 'Unknown User';
+
+    // Fetch existing ratings data
     const sheetData = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: 'Sheet1!A:I',
     });
 
-    const rows = sheetData.data.values || [];
-    const dataRows = rows.slice(1);
-
-    const matchIndex = dataRows.findIndex(
+    const rowsData = sheetData.data.values || [];
+    const matchIndex = rowsData.slice(1).findIndex(
       (row) => row[0] === userCode && row[1] === spotName
     );
 
     if (matchIndex !== -1) {
       // Update existing rating
-      const rowNumber = matchIndex + 2;
+      const rowNumber = matchIndex + 2; // Account for header row and 1-based indexing
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
         range: `Sheet1!A${rowNumber}:I${rowNumber}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [[
-            userCode,
-            spotName,
-            userName, // This might need to be fetched or passed in
-            crust,
-            sauce,
-            cheese,
-            overallFlavor,
-            notes,
-            new Date().toISOString(),
+            userCode, spotName, userName, crust, sauce, cheese, overallFlavor, notes, new Date().toISOString()
           ]],
         },
       });
     } else {
-      // Add new rating
+      // Add a new rating
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
         range: 'Sheet1!A:I',
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [[
-            userCode,
-            spotName,
-            userName, // This might need to be fetched or passed in
-            crust,
-            sauce,
-            cheese,
-            overallFlavor,
-            notes,
-            new Date().toISOString(),
+            userCode, spotName, userName, crust, sauce, cheese, overallFlavor, notes, new Date().toISOString()
           ]],
         },
       });
@@ -95,7 +88,7 @@ app.post('/submit-rating', async (req, res) => {
 
     res.status(200).json({ message: 'Rating submitted successfully!' });
   } catch (error) {
-    console.error('Error handling rating submission:', error);
+    console.error('Error handling rating submission:', error.message);
     res.status(500).json({ error: 'Failed to submit rating.' });
   }
 });
