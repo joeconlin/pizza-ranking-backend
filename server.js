@@ -385,6 +385,8 @@ app.post('/verify-code', async (req, res) => {
   try {
     const { userCode } = req.body;
     
+    console.log('Received userCode:', userCode);
+
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: 'UserMapping!A:B',
