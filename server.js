@@ -394,10 +394,17 @@ app.post('/verify-code', async (req, res) => {
 
     const rows = response.data.values || [];
     const sanitizedCode = userCode.trim().toLowerCase();
+
+    // Debug log: fetched rows
+    console.log('Fetched rows from UserMapping sheet:', rows);
+
     const exists = rows.some(row => row[0].trim().toLowerCase() === sanitizedCode);
 
     if (exists) {
       const matchingRow = rows.find(row => row[0].trim().toLowerCase() === sanitizedCode);
+      // Debug log: matched friendly name
+      console.log(`Mapped userCode "${userCode}" to friendly name: ${matchingRow[1] || 'Unknown User'}`);
+
       console.log(`Mapped userCode "${userCode}" to friendly name: ${matchingRow[1] || 'Unknown User'}`);
       res.status(200).json({ valid: true, friendlyName: matchingRow[1] || 'Unknown User' });
     } else {
