@@ -384,30 +384,30 @@ app.get('/get-leaderboard', async (req, res) => {
 app.post('/verify-code', async (req, res) => {
   try {
     const { userCode } = req.body;
-    
-    console.log('Received userCode:', userCode);
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'UserMapping!A:B',
+      range: 'Sheet1!A:H', // Update to fetch from Sheet1
     });
 
     const rows = response.data.values || [];
     const sanitizedCode = userCode.trim().toLowerCase();
 
     // Debug log: fetched rows
-    console.log('Fetched rows from UserMapping sheet:', rows);
+    console.log('Fetched rows from Sheet1:', rows);
 
+    // Match against the userCode column (Column A)
     const exists = rows.some(row => row[0].trim().toLowerCase() === sanitizedCode);
 
     if (exists) {
+      // Optionally retrieve additional data (like the friendly name or other info)
       const matchingRow = rows.find(row => row[0].trim().toLowerCase() === sanitizedCode);
-      // Debug log: matched friendly name
-      console.log(`Mapped userCode "${userCode}" to friendly name: ${matchingRow[1] || 'Unknown User'}`);
+      const friendlyName = matchingRow[2] || 'Unknown User'; // Assuming Column C has usernames
 
-      console.log(`Mapped userCode "${userCode}" to friendly name: ${matchingRow[1] || 'Unknown User'}`);
-      res.status(200).json({ valid: true, friendlyName: matchingRow[1] || 'Unknown User' });
+      console.log(`Mapped userCode "${userCode}" to friendly name: ${friendlyName}`);
+      res.status(200).json({ valid: true, friendlyName });
     } else {
+      console.log(`User code "${userCode}" not found in Sheet1.`);
       res.status(404).json({ valid: false });
     }
   } catch (error) {
